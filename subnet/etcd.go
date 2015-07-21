@@ -109,7 +109,7 @@ func (m *EtcdManager) AcquireLease(ctx context.Context, network string, attrs *L
 
 func findLeaseByIP(leases []Lease, pubIP ip.IP4) *Lease {
 	for _, l := range leases {
-		if pubIP == l.Attrs.PublicIP {
+		if pubIP == l.Attrs.InterfaceIP {
 			return &l
 		}
 	}
@@ -117,7 +117,7 @@ func findLeaseByIP(leases []Lease, pubIP ip.IP4) *Lease {
 	return nil
 }
 
-func (m *EtcdManager) tryAcquireLease(ctx context.Context, network string, config *Config, extIP ip.IP4, attrs *LeaseAttrs) (*Lease, error) {
+func (m *EtcdManager) tryAcquireLease(ctx context.Context, network string, config *Config, extIaddr ip.IP4, attrs *LeaseAttrs) (*Lease, error) {
 	var err error
 	leases, _, err := m.getLeases(ctx, network)
 	if err != nil {
@@ -130,10 +130,10 @@ func (m *EtcdManager) tryAcquireLease(ctx context.Context, network string, confi
 	}
 
 	// try to reuse a subnet if there's one that matches our IP
-	if l := findLeaseByIP(leases, extIP); l != nil {
+	if l := findLeaseByIP(leases, extIaddr); l != nil {
 		// make sure the existing subnet is still within the configured network
 		if isSubnetConfigCompat(config, l.Subnet) {
-			log.Infof("Found lease (%v) for current IP (%v), reusing", l.Subnet, extIP)
+			log.Infof("Found lease (%v) for current IP (%v), reusing", l.Subnet, extIaddr)
 			resp, err := m.registry.updateSubnet(ctx, network, l.Key(), string(attrBytes), subnetTTL)
 			if err != nil {
 				return nil, err
@@ -143,7 +143,7 @@ func (m *EtcdManager) tryAcquireLease(ctx context.Context, network string, confi
 			l.Expiration = *resp.Node.Expiration
 			return l, nil
 		} else {
-			log.Infof("Found lease (%v) for current IP (%v) but not compatible with current config, deleting", l.Subnet, extIP)
+			log.Infof("Found lease (%v) for current IP (%v) but not compatible with current config, deleting", l.Subnet, extIaddr)
 			if _, err := m.registry.deleteSubnet(ctx, network, l.Key()); err != nil {
 				return nil, err
 			}
@@ -176,7 +176,7 @@ func (m *EtcdManager) tryAcquireLease(ctx context.Context, network string, confi
 
 func (m *EtcdManager) acquireLeaseOnce(ctx context.Context, network string, config *Config, attrs *LeaseAttrs) (*Lease, error) {
 	for i := 0; i < registerRetries; i++ {
-		l, err := m.tryAcquireLease(ctx, network, config, attrs.PublicIP, attrs)
+		l, err := m.tryAcquireLease(ctx, network, config, attrs.InterfaceIP, attrs)
 		switch {
 		case err != nil:
 			return nil, err

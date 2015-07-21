@@ -36,6 +36,7 @@ import (
 )
 
 type CmdLineOpts struct {
+	endpointIp     ip.IP4
 	etcdEndpoints  string
 	etcdPrefix     string
 	etcdKeyfile    string
@@ -58,6 +59,7 @@ type CmdLineOpts struct {
 var opts CmdLineOpts
 
 func init() {
+	flag.StringVar(&opts.endpointIp, "endpoint-ip", "", "ip accessible by other nodes for inter-host communication")
 	flag.StringVar(&opts.etcdEndpoints, "etcd-endpoints", "http://127.0.0.1:4001,http://127.0.0.1:2379", "a comma-delimited list of etcd endpoints")
 	flag.StringVar(&opts.etcdPrefix, "etcd-prefix", "/coreos.com/network", "etcd prefix")
 	flag.StringVar(&opts.etcdKeyfile, "etcd-keyfile", "", "SSL key file used to secure etcd communication")
@@ -126,14 +128,15 @@ func writeSubnetFile(path string, sn *backend.SubnetDef) error {
 	return os.Rename(tempFile, path)
 }
 
-func lookupIface() (*net.Interface, net.IP, error) {
+func lookupIface() (*net.Interface, net.IP, net.IP, error) {
 	var iface *net.Interface
-	var ipaddr net.IP
+	var iaddr net.IP
+	var eaddr net.IP
 	var err error
 
 	if len(opts.iface) > 0 {
-		if ipaddr = net.ParseIP(opts.iface); ipaddr != nil {
-			iface, err = ip.GetInterfaceByIP(ipaddr)
+		if iaddr = net.ParseIP(opts.iface); iaddr != nil {
+			iface, err = ip.GetInterfaceByIP(iaddr)
 			if err != nil {
 				return nil, nil, fmt.Errorf("Error looking up interface %s: %s", opts.iface, err)
 			}
@@ -150,14 +153,20 @@ func lookupIface() (*net.Interface, net.IP, error) {
 		}
 	}
 
-	if ipaddr == nil {
-		ipaddr, err = ip.GetIfaceIP4Addr(iface)
+	if iaddr == nil {
+		iaddr, err = ip.GetIfaceIP4Addr(iface)
 		if err != nil {
 			return nil, nil, fmt.Errorf("Failed to find IPv4 address for interface %s", iface.Name)
 		}
 	}
 
-	return iface, ipaddr, nil
+	if len(opts.endpointIp) > 0 {
+		eaddr = opts.endpointIp
+	} else {
+		eaddr = iaddr
+	}
+
+	return iface, iaddr, eaddr nil
 }
 
 func isMultiNetwork() bool {
@@ -181,18 +190,19 @@ func newSubnetManager() (subnet.Manager, error) {
 }
 
 func initAndRun(ctx context.Context, sm subnet.Manager, netnames []string) {
-	iface, ipaddr, err := lookupIface()
+	iface, iaddr, eaddr, err := lookupIface()
 	if err != nil {
 		log.Error(err)
 		return
 	}
 
 	if iface.MTU == 0 {
-		log.Errorf("Failed to determine MTU for %s interface", ipaddr)
+		log.Errorf("Failed to determine MTU for %s interface", iaddr)
 		return
 	}
 
-	log.Infof("Using %s as external interface", ipaddr)
+	log.Infof("Using %s as external interface", iaddr)
+	log.Infof("Using %s as external endpoint", eaddr)
 
 	nets := []*network.Network{}
 	for _, n := range netnames {
@@ -206,7 +216,7 @@ func initAndRun(ctx context.Context, sm subnet.Manager, netnames []string) {
 			wg.Add(1)
 			defer wg.Done()
 
-			sn := n.Init(ctx, iface, ipaddr)
+			sn := n.Init(ctx, iface, iaddr, eaddr)
 			if sn != nil {
 				if isMultiNetwork() {
 					path := filepath.Join(opts.subnetDir, n.Name) + ".env"

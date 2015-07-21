@@ -25,7 +25,8 @@ import (
 )
 
 type LeaseAttrs struct {
-	PublicIP    ip.IP4
+	InterfaceIP ip.IP4
+	EndpointIP  ip.IP4          `json:",omitempty"`
 	BackendType string          `json:",omitempty"`
 	BackendData json.RawMessage `json:",omitempty"`
 }

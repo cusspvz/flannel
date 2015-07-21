@@ -69,7 +69,7 @@ func New(sm subnet.Manager, network string, config *subnet.Config) backend.Backe
 	return &be
 }
 
-func (m *UdpBackend) Init(extIface *net.Interface, extIP net.IP) (*backend.SubnetDef, error) {
+func (m *UdpBackend) Init(extIface *net.Interface, extIaddr net.IP, extEaddr net.IP) (*backend.SubnetDef, error) {
 	// Parse our configuration
 	if len(m.config.Backend) > 0 {
 		if err := json.Unmarshal(m.config.Backend, &m.cfg); err != nil {
@@ -79,7 +79,7 @@ func (m *UdpBackend) Init(extIface *net.Interface, extIP net.IP) (*backend.Subne
 
 	// Acquire the lease form subnet manager
 	attrs := subnet.LeaseAttrs{
-		PublicIP: ip.FromIP(extIP),
+		InterfaceIP: ip.FromIP(extIaddr),
 	}
 
 	l, err := m.sm.AcquireLease(m.ctx, m.network, &attrs)
@@ -246,7 +246,7 @@ func (m *UdpBackend) processSubnetEvents(batch []subnet.Event) {
 		case subnet.SubnetAdded:
 			log.Info("Subnet added: ", evt.Lease.Subnet)
 
-			setRoute(m.ctl, evt.Lease.Subnet, evt.Lease.Attrs.PublicIP, m.cfg.Port)
+			setRoute(m.ctl, evt.Lease.Subnet, evt.Lease.Attrs.InterfaceIP, m.cfg.Port)
 
 		case subnet.SubnetRemoved:
 			log.Info("Subnet removed: ", evt.Lease.Subnet)
