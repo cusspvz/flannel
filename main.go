@@ -36,6 +36,7 @@ import (
 )
 
 type CmdLineOpts struct {
+	endpointIp     ip.IP4
 	etcdEndpoints  string
 	etcdPrefix     string
 	etcdKeyfile    string
@@ -58,6 +59,7 @@ type CmdLineOpts struct {
 var opts CmdLineOpts
 
 func init() {
+	flag.StringVar(&opts.endpointIp, "endpoint-ip", "", "ip accessible by other nodes for inter-host communication")
 	flag.StringVar(&opts.etcdEndpoints, "etcd-endpoints", "http://127.0.0.1:4001,http://127.0.0.1:2379", "a comma-delimited list of etcd endpoints")
 	flag.StringVar(&opts.etcdPrefix, "etcd-prefix", "/coreos.com/network", "etcd prefix")
 	flag.StringVar(&opts.etcdKeyfile, "etcd-keyfile", "", "SSL key file used to secure etcd communication")
