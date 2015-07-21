@@ -62,7 +62,7 @@ func (rb *HostgwBackend) Init(extIface *net.Interface, extIP net.IP) (*backend.S
 	rb.extIP = extIP
 
 	attrs := subnet.LeaseAttrs{
-		PublicIP:    ip.FromIP(extIP),
+		InterfaceIP:    ip.FromIP(extIP),
 		BackendType: "host-gw",
 	}
 
@@ -133,7 +133,7 @@ func (rb *HostgwBackend) handleSubnetEvents(batch []subnet.Event) {
 	for _, evt := range batch {
 		switch evt.Type {
 		case subnet.SubnetAdded:
-			log.Infof("Subnet added: %v via %v", evt.Lease.Subnet, evt.Lease.Attrs.PublicIP)
+			log.Infof("Subnet added: %v via %v", evt.Lease.Subnet, evt.Lease.Attrs.InterfaceIP)
 
 			if evt.Lease.Attrs.BackendType != "host-gw" {
 				log.Warningf("Ignoring non-host-gw subnet: type=%v", evt.Lease.Attrs.BackendType)
@@ -142,14 +142,14 @@ func (rb *HostgwBackend) handleSubnetEvents(batch []subnet.Event) {
 
 			route := netlink.Route{
 				Dst:       evt.Lease.Subnet.ToIPNet(),
-				Gw:        evt.Lease.Attrs.PublicIP.ToIP(),
+				Gw:        evt.Lease.Attrs.InterfaceIP.ToIP(),
 				LinkIndex: rb.extIface.Index,
 			}
 			if rb.extIP.Equal(route.Gw) {
 				continue
 			}
 			if err := netlink.RouteAdd(&route); err != nil {
-				log.Errorf("Error adding route to %v via %v: %v", evt.Lease.Subnet, evt.Lease.Attrs.PublicIP, err)
+				log.Errorf("Error adding route to %v via %v: %v", evt.Lease.Subnet, evt.Lease.Attrs.InterfaceIP, err)
 				continue
 			}
 			rb.addToRouteList(route)
@@ -164,7 +164,7 @@ func (rb *HostgwBackend) handleSubnetEvents(batch []subnet.Event) {
 
 			route := netlink.Route{
 				Dst:       evt.Lease.Subnet.ToIPNet(),
-				Gw:        evt.Lease.Attrs.PublicIP.ToIP(),
+				Gw:        evt.Lease.Attrs.InterfaceIP.ToIP(),
 				LinkIndex: rb.extIface.Index,
 			}
 			if err := netlink.RouteDel(&route); err != nil {

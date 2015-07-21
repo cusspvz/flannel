@@ -109,7 +109,7 @@ func (m *EtcdManager) AcquireLease(ctx context.Context, network string, attrs *L
 
 func findLeaseByIP(leases []Lease, pubIP ip.IP4) *Lease {
 	for _, l := range leases {
-		if pubIP == l.Attrs.PublicIP {
+		if pubIP == l.Attrs.InterfaceIP {
 			return &l
 		}
 	}
@@ -176,7 +176,7 @@ func (m *EtcdManager) tryAcquireLease(ctx context.Context, network string, confi
 
 func (m *EtcdManager) acquireLeaseOnce(ctx context.Context, network string, config *Config, attrs *LeaseAttrs) (*Lease, error) {
 	for i := 0; i < registerRetries; i++ {
-		l, err := m.tryAcquireLease(ctx, network, config, attrs.PublicIP, attrs)
+		l, err := m.tryAcquireLease(ctx, network, config, attrs.InterfaceIP, attrs)
 		switch {
 		case err != nil:
 			return nil, err

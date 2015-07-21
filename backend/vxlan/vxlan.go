@@ -73,7 +73,7 @@ func newSubnetAttrs(pubIP net.IP, mac net.HardwareAddr) (*subnet.LeaseAttrs, err
 	}
 
 	return &subnet.LeaseAttrs{
-		PublicIP:    ip.FromIP(pubIP),
+		InterfaceIP:    ip.FromIP(pubIP),
 		BackendType: "vxlan",
 		BackendData: json.RawMessage(data),
 	}, nil
@@ -242,7 +242,7 @@ func (vb *VXLANBackend) handleSubnetEvents(batch []subnet.Event) {
 				continue
 			}
 			vb.rts.set(evt.Lease.Subnet, net.HardwareAddr(attrs.VtepMAC))
-			vb.dev.AddL2(neigh{IP: evt.Lease.Attrs.PublicIP, MAC: net.HardwareAddr(attrs.VtepMAC)})
+			vb.dev.AddL2(neigh{IP: evt.Lease.Attrs.InterfaceIP, MAC: net.HardwareAddr(attrs.VtepMAC)})
 
 		case subnet.SubnetRemoved:
 			log.Info("Subnet removed: ", evt.Lease.Subnet)
@@ -259,7 +259,7 @@ func (vb *VXLANBackend) handleSubnetEvents(batch []subnet.Event) {
 			}
 
 			if len(attrs.VtepMAC) > 0 {
-				vb.dev.DelL2(neigh{IP: evt.Lease.Attrs.PublicIP, MAC: net.HardwareAddr(attrs.VtepMAC)})
+				vb.dev.DelL2(neigh{IP: evt.Lease.Attrs.InterfaceIP, MAC: net.HardwareAddr(attrs.VtepMAC)})
 			}
 			vb.rts.remove(evt.Lease.Subnet)
 
@@ -298,7 +298,7 @@ func (vb *VXLANBackend) handleInitialSubnetEvents(batch []subnet.Event) error {
 		}
 
 		for j, fdbEntry := range fdbTable {
-			if evt.Lease.Attrs.PublicIP.ToIP().Equal(fdbEntry.IP) && bytes.Equal([]byte(leaseAttrsList[i].VtepMAC), []byte(fdbEntry.HardwareAddr)) {
+			if evt.Lease.Attrs.InterfaceIP.ToIP().Equal(fdbEntry.IP) && bytes.Equal([]byte(leaseAttrsList[i].VtepMAC), []byte(fdbEntry.HardwareAddr)) {
 				evtMarker[i] = true
 				fdbEntryMarker[j] = true
 				break
@@ -318,7 +318,7 @@ func (vb *VXLANBackend) handleInitialSubnetEvents(batch []subnet.Event) error {
 
 	for i, marker := range evtMarker {
 		if !marker {
-			err := vb.dev.AddL2(neigh{IP: batch[i].Lease.Attrs.PublicIP, MAC: net.HardwareAddr(leaseAttrsList[i].VtepMAC)})
+			err := vb.dev.AddL2(neigh{IP: batch[i].Lease.Attrs.InterfaceIP, MAC: net.HardwareAddr(leaseAttrsList[i].VtepMAC)})
 			if err != nil {
 				log.Error("Add L2 failed: ", err)
 			}

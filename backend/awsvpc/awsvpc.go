@@ -64,7 +64,7 @@ func (m *AwsVpcBackend) Init(extIface *net.Interface, extIP net.IP) (*backend.Su
 
 	// Acquire the lease form subnet manager
 	attrs := subnet.LeaseAttrs{
-		PublicIP: ip.FromIP(extIP),
+		InterfaceIP: ip.FromIP(extIP),
 	}
 
 	l, err := m.sm.AcquireLease(m.ctx, m.network, &attrs)

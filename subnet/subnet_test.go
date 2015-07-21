@@ -29,10 +29,10 @@ import (
 
 func newDummyRegistry(ttlOverride uint64) *mockSubnetRegistry {
 	subnets := []*etcd.Node{
-		&etcd.Node{Key: "10.3.1.0-24", Value: `{ "PublicIP": "1.1.1.1" }`, ModifiedIndex: 10},
-		&etcd.Node{Key: "10.3.2.0-24", Value: `{ "PublicIP": "1.1.1.1" }`, ModifiedIndex: 11},
-		&etcd.Node{Key: "10.3.4.0-24", Value: `{ "PublicIP": "1.1.1.1" }`, ModifiedIndex: 12},
-		&etcd.Node{Key: "10.3.5.0-24", Value: `{ "PublicIP": "1.1.1.1" }`, ModifiedIndex: 13},
+		&etcd.Node{Key: "10.3.1.0-24", Value: `{ "InterfaceIP": "1.1.1.1" }`, ModifiedIndex: 10},
+		&etcd.Node{Key: "10.3.2.0-24", Value: `{ "InterfaceIP": "1.1.1.1" }`, ModifiedIndex: 11},
+		&etcd.Node{Key: "10.3.4.0-24", Value: `{ "InterfaceIP": "1.1.1.1" }`, ModifiedIndex: 12},
+		&etcd.Node{Key: "10.3.5.0-24", Value: `{ "InterfaceIP": "1.1.1.1" }`, ModifiedIndex: 13},
 	}
 
 	config := `{ "Network": "10.3.0.0/16", "SubnetMin": "10.3.1.0", "SubnetMax": "10.3.5.0" }`
@@ -45,7 +45,7 @@ func TestAcquireLease(t *testing.T) {
 
 	extIP, _ := ip.ParseIP4("1.2.3.4")
 	attrs := LeaseAttrs{
-		PublicIP: extIP,
+		InterfaceIP: extIP,
 	}
 
 	l, err := sm.AcquireLease(context.Background(), "", &attrs)
@@ -73,7 +73,7 @@ func TestConfigChanged(t *testing.T) {
 
 	extIP, _ := ip.ParseIP4("1.2.3.4")
 	attrs := LeaseAttrs{
-		PublicIP: extIP,
+		InterfaceIP: extIP,
 	}
 
 	l, err := sm.AcquireLease(context.Background(), "", &attrs)
@@ -125,7 +125,7 @@ func TestWatchLeaseAdded(t *testing.T) {
 	<-events
 
 	expected := "10.3.3.0-24"
-	msr.createSubnet(ctx, "_", expected, `{"PublicIP": "1.1.1.1"}`, 0)
+	msr.createSubnet(ctx, "_", expected, `{"InterfaceIP": "1.1.1.1"}`, 0)
 
 	evtBatch := <-events
 
@@ -190,7 +190,7 @@ func TestRenewLease(t *testing.T) {
 	// Create LeaseAttrs
 	extIP, _ := ip.ParseIP4("1.2.3.4")
 	attrs := LeaseAttrs{
-		PublicIP:    extIP,
+		InterfaceIP:    extIP,
 		BackendType: "vxlan",
 	}
 

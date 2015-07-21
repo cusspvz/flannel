@@ -88,7 +88,7 @@ func New(sm subnet.Manager, network string, config *subnet.Config) backend.Backe
 
 func (g *GCEBackend) Init(extIface *net.Interface, extIP net.IP) (*backend.SubnetDef, error) {
 	attrs := subnet.LeaseAttrs{
-		PublicIP: ip.FromIP(extIP),
+		InterfaceIP: ip.FromIP(extIP),
 	}
 
 	l, err := g.sm.AcquireLease(g.ctx, g.network, &attrs)

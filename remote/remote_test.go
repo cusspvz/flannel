@@ -105,7 +105,7 @@ func doTestRemote(ctx context.Context, t *testing.T, remoteAddr string) {
 	}
 
 	attrs := &subnet.LeaseAttrs{
-		PublicIP: mustParseIP4("1.1.1.1"),
+		InterfaceIP: mustParseIP4("1.1.1.1"),
 	}
 	l, err := sm.AcquireLease(ctx, "_", attrs)
 	if err != nil {
@@ -134,7 +134,7 @@ func doTestWatch(t *testing.T, sm subnet.Manager) {
 	<-events
 
 	attrs := &subnet.LeaseAttrs{
-		PublicIP: mustParseIP4("1.1.1.2"),
+		InterfaceIP: mustParseIP4("1.1.1.2"),
 	}
 	l, err := sm.AcquireLease(ctx, "_", attrs)
 	if err != nil {
