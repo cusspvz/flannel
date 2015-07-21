@@ -38,7 +38,7 @@ type HostgwBackend struct {
 	network  string
 	lease    *subnet.Lease
 	extIface *net.Interface
-	extIP    net.IP
+	extIaddr net.IP
 	ctx      context.Context
 	cancel   context.CancelFunc
 	wg       sync.WaitGroup
@@ -57,12 +57,12 @@ func New(sm subnet.Manager, network string) backend.Backend {
 	return b
 }
 
-func (rb *HostgwBackend) Init(extIface *net.Interface, extIP net.IP) (*backend.SubnetDef, error) {
+func (rb *HostgwBackend) Init(extIface *net.Interface, extIaddr net.IP, extEaddr net.IP) (*backend.SubnetDef, error) {
 	rb.extIface = extIface
-	rb.extIP = extIP
+	rb.extIaddr = extIaddr
 
 	attrs := subnet.LeaseAttrs{
-		InterfaceIP:    ip.FromIP(extIP),
+		InterfaceIP:    ip.FromIP(extIaddr),
 		BackendType: "host-gw",
 	}
 
@@ -145,7 +145,7 @@ func (rb *HostgwBackend) handleSubnetEvents(batch []subnet.Event) {
 				Gw:        evt.Lease.Attrs.InterfaceIP.ToIP(),
 				LinkIndex: rb.extIface.Index,
 			}
-			if rb.extIP.Equal(route.Gw) {
+			if rb.extIaddr.Equal(route.Gw) {
 				continue
 			}
 			if err := netlink.RouteAdd(&route); err != nil {
